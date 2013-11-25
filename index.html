@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <script src="http://d3js.org/d3.v2.min.js?2.10.1"></script>
+  <script src="http://underscorejs.org/underscore.js"></script>
+  <link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+  <title>Don't Get Hit!</title>
+</head>
+<body>
+  <h1> Don't Get Hit! </h1>
+
+  <div class = "scoreBoard">
+    <h3> High Score: <span class = "bestScore"></span> </h3>
+    <h3> Current Score: <span class = "activeScore"></span> </h3>
+  </div>
+
+  <script>
+  var gameSettings = {
+    height: 600,
+    width: 800,
+    nEnemies: 45,
+    padding: 20
+  }
+
+  var score = {
+   currentScore: 0,
+   bestScore: 0
+ };
+
+ setInterval(function(){
+  score.currentScore++;
+  d3.select('.activeScore').text(score.currentScore);
+  if(score.currentScore > score.bestScore){
+    score.bestScore = score.currentScore;
+    d3.select('.bestScore').text(score.bestScore);
+  }
+}, 100);
+
+// draw a gameboard with SVG
+var board = d3.select('body').append('svg').attr({width: gameSettings.width, height: gameSettings.height, class: "gameBoard"});
+
+var makeEnemies = function () {
+  return _.range(0, gameSettings.nEnemies).map(function(i) {
+    return {
+      id: i,
+      x: Math.random() * 800,
+      y: Math.random() * 600
+    }
+  })
+};
+
+var enemies = makeEnemies();
+
+var makePlayer = function () {
+  return [{
+    id: 'player',
+    x: 400,
+    y: 300
+  }];
+}
+
+var player = makePlayer();
+
+// render badguys
+var renderEnemies = board.selectAll('circle').data(enemies).enter().append('circle').attr('cx', function(i){ return i.x; }).attr('cy', function(i){ return i.y; }).attr('id', function(i){ return i.id; }).attr('r', 10).attr('fill', 'blue' );
+
+var drag = d3.behavior.drag()
+.on('drag', function(d){
+  d3.select(this).attr('cx', function(){if(d3.event.x < 0){ return 0; } else if (d3.event.x > 800) { return 800; } else {return d3.event.x} }).attr('cy', function(){if(d3.event.y < 0){ return 0; } else if (d3.event.y > 600) { return 600; } else {return d3.event.y} });
+});
+
+var renderPlayer = board.selectAll('player').data(player);
+renderPlayer.enter().append('circle').attr('fill', 'red').attr('r', 10).attr('cy', function(i){return i.y}).attr('cx', function (i) {return i.x}).attr('class', 'player').call(drag);
+
+setInterval(function(){
+  renderEnemies.transition().duration(1000).attr('cx', function(i){ return Math.random() * 800}).attr('cy', function(i){ return Math.random() * 600});
+}, 2000);
+
+function collide(enemies) {
+  enemies.each(function(){
+  if(Math.abs(d3.select(this).attr("cx") - d3.select('.player').attr("cx")) < 20 && Math.abs(d3.select(this).attr("cy") - d3.select('.player').attr("cy")) < 20){
+    score.currentScore = 0;
+    d3.select('.activeScore').text(score.currentScore);
+    }
+  });
+}
+
+d3.timer(function(){collide(renderEnemies)});
+</script>
+</body>
+
+</html>
